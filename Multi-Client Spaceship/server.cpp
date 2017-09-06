@@ -43,9 +43,9 @@
       //holdProtocol = protocol;
       //strcpy(sendProtocol,holdProtocol.c_str());    
 
-      for (int i=0;i<clients.size();i++){
-        if(protocol[0] == '0'){
-          printf("newUser");
+      if(protocol[0] == '0'){
+          //printf("newUser");
+          
           intToString = intToStr(nextNewPlayer);
           protocol[0] = intToString[0];
           protocol[1] = '0';
@@ -54,13 +54,12 @@
           protocol[4] = '0';
           protocol[5] = '0';
           nextNewPlayer++;
+          printf("newUser %s\n", protocol);
+      }
+      for (int i=0;i<clients.size();i++){
           n = write(clients[i],protocol,MAX_ACTION);
-        }
-        else{
-          n = write(clients[i],protocol,MAX_ACTION);
-          //bzero(buffer, sizeof(buffer));
+          
           if (n < 0) perror("ERROR writing to socket");
-        }
       }
     
     

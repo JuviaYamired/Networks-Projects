@@ -48,10 +48,10 @@
   for(int i = 0; i < myMap.size(); i++){
     for(int j = 0; j < myMap.size(); j++){
       if(i == x && j == y) {
-  myMap[i][j] = pl;
-  myMap[i][j+1] = pl;
-  myMap[i+1][j] = pl;
-  myMap[i+1][j+1] = pl;
+        myMap[i][j] = pl;
+        myMap[i][j+1] = pl;
+        myMap[i+1][j] = pl;
+        myMap[i+1][j+1] = pl;
       }
       cout<<myMap[i][j];
     }
@@ -59,21 +59,12 @@
   }
   }
 
-  void updateGameArea()
-  {
-    printf("\n \033[2J");
-    for(int i = 0 ; i < 50 ; ++i){
-      for(int j = 0 ; j < 50 ; ++j){
-        printf("%c",gameArea[i][j]);
-      }
-      printf("\n");
-    }
-  }
-
   void readSD(int clientSD){
     string x,y,player;
     char protocol[MAX_ACTION];
     int n;
+    n = read(clientSD,protocol,MAX_ACTION);
+    num_player = protocol[0];
     while(true){
       n = read(clientSD,protocol,MAX_ACTION);
       printf("Mi protocolo %s \n",protocol);
@@ -86,7 +77,7 @@
       y+= protocol[5];
 
       drawMap(myMap, stoi(x), stoi(y), stoi(player));
-      bzero(protocol,MAX_ACTION);
+      //bzero(protocol,MAX_ACTION);
     }
     shutdown(clientSD, SHUT_RDWR); 
     close(clientSD);
@@ -189,32 +180,12 @@
       close(SocketFD);
       exit(EXIT_FAILURE);
     }
-
-    bzero(action,MAX_ACTION);
-    action[0] = '1';
-    action[1] = '1';
-    action[2] = '0';
-    action[3] = '0';
-    action[4] = '0';
-    action[5] = '0';
-    
     initializeMap(myMap);
-    num_player = action[0];
-    act = action[1];
-    x = action[2];
-    x.push_back(action[3]);
-    cout<<x<<endl;
-    xx = stoi(x);
-    y = action[4];
-    y.push_back(action[5]);
-
-    yy = stoi(y);
-    buffer = action;
-    cout<<buffer<<endl;
     //while(true)
     //{
-    std::thread(writeSD,SocketFD).detach();   
     std::thread(readSD,SocketFD).detach();
+    std::thread(writeSD,SocketFD).detach();   
+    
     //cin>>message;
     //cin.getline(buffer,6);
     //n= write(SocketFD,message.data(),message.size());
