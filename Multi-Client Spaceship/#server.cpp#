@@ -55,7 +55,6 @@
           protocol[5] = '0';
           nextNewPlayer++;
           n = write(clients[i],protocol,MAX_ACTION);
-	  
         }
         else{
           n = write(clients[i],protocol,MAX_ACTION);

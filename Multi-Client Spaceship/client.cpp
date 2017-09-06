@@ -10,7 +10,7 @@
   #include <thread>
   #include <iostream>
   #include <vector>
-  #include <curses.h>
+//#include <curses.h>
   #include <unistd.h>
   using namespace std;
 
@@ -37,13 +37,15 @@
   
   void drawMap(vector<vch>& myMap, int x, int y, int player){
 
+    string abc = "-ABC";
+
   for(int i = 0; i < myMap.size(); i++){
     for(int j = 0; j < myMap.size(); j++){
-      myMap[i][j] = ' ';
+      if(myMap[i][j] == abc[player]) myMap[i][j] = ' ';
     }
   }
   
-  string abc = "ABC";
+  
   char pl = abc[player];
   for(int i = 0; i < myMap.size(); i++){
     for(int j = 0; j < myMap.size(); j++){
@@ -79,6 +81,7 @@
       printf("Mi protocolo %s \n",protocol);
 
       player = protocol[0];
+      if(protocol[1] == '0' && num_player == '-') num_player = protocol[0];
       x = protocol[2];
       x+= protocol[3];
 
@@ -131,6 +134,7 @@
       //
       //string temp="123456";
       //strcpy(protocol,temp.c_str());
+      printf("Mi protocolo es: %s", protocol);
       n = write(clientSD,protocol,MAX_ACTION);
       //updateGameArea();
     }
@@ -191,7 +195,7 @@
     }
 
     bzero(action,MAX_ACTION);
-    action[0] = '1';
+    action[0] = '-';
     action[1] = '1';
     action[2] = '0';
     action[3] = '0';
