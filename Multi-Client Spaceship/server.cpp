@@ -14,7 +14,7 @@
  
   using namespace std;
 
-  #define MAX_ACTION 6
+  #define MAX_ACTION 7
   vector<int> clients;
   int nextNewPlayer = 1;
 
@@ -53,6 +53,7 @@
           protocol[3] = '0';
           protocol[4] = '0';
           protocol[5] = '0';
+	  protocol[6] = '0';
           nextNewPlayer++;
           n = write(clients[i],protocol,MAX_ACTION);
 	  
