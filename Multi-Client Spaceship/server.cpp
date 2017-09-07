@@ -14,13 +14,13 @@
  
   using namespace std;
 
-  #define MAX_ACTION 6
+  #define MAX_ACTION 7
   vector<int> clients;
   int nextNewPlayer = 1;
 
   string intToStr (int x)
   {
-      std::stringstream str;
+      stringstream str;
       str << x;
       return str.str();
   }
@@ -31,21 +31,7 @@
     string intToString;
     char sendProtocol[MAX_ACTION];
     int n;
-
-    while(true){
-
-      n = read(clientSD,protocol,MAX_ACTION);
-      if (n < 0) perror("ERROR reading from socket");
-      //printf("Here is the message: [%s]\n",buffer);
-      //buffer2 = buffer;
-      //buffer2 = "You Send: " + buffer2;
-      //strcpy(buffer,buffer2.c_str());
-      //holdProtocol = protocol;
-      //strcpy(sendProtocol,holdProtocol.c_str());    
-
-      if(protocol[0] == '0'){
-          //printf("newUser");
-          
+    if(protocol[0] == '0'){          
           intToString = intToStr(nextNewPlayer);
           protocol[0] = intToString[0];
           protocol[1] = '0';
@@ -55,18 +41,18 @@
           protocol[5] = '0';
           nextNewPlayer++;
           printf("newUser %s\n", protocol);
-      }
+    }
+
+    while(true){
+      n = read(clientSD,protocol,MAX_ACTION);
+      if (n < 0) perror("ERROR reading from socket");
       for (int i=0;i<clients.size();i++){
           n = write(clients[i],protocol,MAX_ACTION);
-          
           if (n < 0) perror("ERROR writing to socket");
-      }
-    
-    
+      } 
     }
     shutdown(clientSD, SHUT_RDWR);
     close(clientSD);
-    
   }
 
   int main()
@@ -74,8 +60,6 @@
     struct sockaddr_in stSockAddr;
     int SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
     int ConnectFD = 0;
-    //char buffer[256];
-    //int n;
  
     if(-1 == SocketFD)
     {
@@ -106,7 +90,7 @@
     while(true)
     {
       ConnectFD = accept(SocketFD, NULL, NULL);
-      
+
       if(0 > ConnectFD)
       {
         perror("error accept failed");
@@ -114,20 +98,8 @@
         exit(EXIT_FAILURE);
       }
     
-    clients.push_back(ConnectFD);
-    std::thread(bot,ConnectFD).detach();
-    
-     //n = read(ConnectFD,buffer,255);
-     //if (n < 0) perror("ERROR reading from socket");
-     //printf("Here is the message: [%s]\n",buffer);
-     //n = write(ConnectFD,"I got your message",18);
-     //if (n < 0) perror("ERROR writing to socket");
- 
-     /* perform read write operations ... */
- 
-      //shutdown(ConnectFD, SHUT_RDWR);
- 
-      //close(ConnectFD);
+      clients.push_back(ConnectFD);
+      std::thread(bot,ConnectFD).detach();
     }
  
     close(SocketFD);

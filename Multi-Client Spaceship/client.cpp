@@ -16,7 +16,7 @@
 
   typedef vector<char> vch;
 
-  #define MAX_ACTION 6
+  #define MAX_ACTION 7
   #define MAX_SIZE 10
   
   char gameArea[50][50];
@@ -66,7 +66,6 @@
     n = read(clientSD,protocol,MAX_ACTION);
     num_player = protocol[0];
     while(true){
-      n = read(clientSD,protocol,MAX_ACTION);
       printf("Mi protocolo %s \n",protocol);
 
       player = protocol[0];
@@ -78,6 +77,8 @@
 
       drawMap(myMap, stoi(x), stoi(y), stoi(player));
       //bzero(protocol,MAX_ACTION);
+      n = read(clientSD,protocol,MAX_ACTION);
+      if (n < 0) perror("ERROR reading from socket");
     }
     shutdown(clientSD, SHUT_RDWR); 
     close(clientSD);
@@ -213,5 +214,5 @@
  
     //close(SocketFD);
 
-    return 0;gameArea[25][25]='A';
+    return 0;
   }
