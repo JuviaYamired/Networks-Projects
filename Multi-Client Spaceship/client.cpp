@@ -43,6 +43,7 @@
     }
   }
   
+  
   string abc = "ABC";
   char pl = abc[player];
   for(int i = 0; i < myMap.size(); i++){

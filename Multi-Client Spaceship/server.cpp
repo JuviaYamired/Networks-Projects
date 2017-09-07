@@ -25,6 +25,7 @@
       return str.str();
   }
 
+  
   void bot(int clientSD)
   {
     char protocol[MAX_ACTION];
