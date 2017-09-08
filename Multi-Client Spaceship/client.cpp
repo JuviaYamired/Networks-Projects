@@ -34,31 +34,78 @@
     myMap.push_back(dummy);
   }
   }
-  
-  void drawMap(vector<vch>& myMap, int x, int y, int player){
 
+  void drawMap(){
   for(int i = 0; i < myMap.size(); i++){
     for(int j = 0; j < myMap.size(); j++){
-      myMap[i][j] = ' ';
-    }
-  }
-  
-  
-  string abc = "ABC";
-  char pl = abc[player];
-  for(int i = 0; i < myMap.size(); i++){
-    for(int j = 0; j < myMap.size(); j++){
-      if(i == x && j == y) {
-        myMap[i][j] = pl;
-        myMap[i][j+1] = pl;
-        myMap[i+1][j] = pl;
-        myMap[i+1][j+1] = pl;
-      }
       cout<<myMap[i][j];
     }
     cout<<endl;
   }
   }
+
+  void updateBullet(int x, int y, char dir){
+  bool start = true;
+  while(x > 0 && x < (MAX_SIZE-1) && y > 0 && y < (MAX_SIZE-1)){
+    if(myMap[x][y]=='.') myMap[x][y] = ' ';
+
+    if(dir == '1') x--;
+    else if(dir == '2') x--,y--;
+    else if(dir == '3') y--;
+    else if(dir == '4'){
+      if(start) x++;
+      x++, y--;
+    }
+    else if(dir == '5'){
+      if(start) x++;
+      x++;
+    }
+    else if(dir == '6'){
+      if(start) x++, y++;
+      x++, y++;
+    }
+    else if(dir == '7'){
+      if(start) y++;
+      y++;
+    }
+    else if(dir == '8'){
+      if(start) x--, y++;
+      x--, y++;
+    }
+    start = false;
+    myMap[x][y] = '.';
+    drawMap();
+    sleep(1);
+  }
+  myMap[x][y] = ' ';
+  drawMap();
+  return;
+  }
+
+  void updateMap(vector<vch>& myMap,int x, int y, int player){
+
+    string abc = "-ABC";
+
+  for(int i = 0; i < myMap.size(); i++){
+    for(int j = 0; j < myMap.size(); j++){
+      if(myMap[i][j] == abc[player]) myMap[i][j] = ' ';
+    }
+  }
+  
+  
+  char pl = abc[player];
+  for(int i = 0; i < myMap.size(); i++){
+    for(int j = 0; j < myMap.size(); j++){
+      if(i == x && j == y) {
+  myMap[i][j] = pl;
+  myMap[i][j+1] = pl;
+  myMap[i+1][j] = pl;
+  myMap[i+1][j+1] = pl;
+      }
+    }
+  }
+  }
+  
 
   void readSD(int clientSD){
     string x,y,player;
@@ -70,13 +117,20 @@
       printf("Mi protocolo %s \n",protocol);
 
       player = protocol[0];
+      //if(protocol[1] == '0' && num_player == '-') num_player = protocol[0];
       x = protocol[2];
       x+= protocol[3];
 
       y = protocol[4];
       y+= protocol[5];
 
-      drawMap(myMap, stoi(x), stoi(y), stoi(player));
+      if(protocol[1] != '2'){
+	      updateMap(myMap, stoi(x), stoi(y), stoi(player));
+	      drawMap();
+      }
+      else if(protocol[1] == '2'){
+	      std::thread(updateBullet,stoi(x),stoi(y),protocol[6]).detach();
+      };
       //bzero(protocol,MAX_ACTION);
       n = read(clientSD,protocol,MAX_ACTION);
       if (n < 0) perror("ERROR reading from socket");
@@ -102,16 +156,19 @@
     n = write(clientSD,protocol,MAX_ACTION);
     while(true){
       cin.getline(buffer,2);
-      if(buffer[0] == 'e') xx--;
-      else if(buffer[0] == 'x') xx++;
-      else if(buffer[0] == 's') yy--;
-      else if(buffer[0] == 'd') yy++;
+
+      protocol[1] = '1';
+      if(buffer[0] == 'e') xx--, protocol[6] = '1';
+      else if(buffer[0] == 'x') xx++, protocol[6] = '2';
+      else if(buffer[0] == 's') yy--, protocol[6] = '3';
+      else if(buffer[0] == 'd') yy++, protocol[6] = '4';
+      else protocol[6] = buffer[0], protocol[1] = '2';
       x = to_string(xx);
       y = to_string(yy);
       if(x.size() == 1) x = '0' + x;
       if(y.size() == 1) y = '0' + y;
       protocol[0] = num_player;
-      protocol[1] = '1';
+      //protocol[1] = '1';
       protocol[2] = x[0];
       protocol[3] = x[1];
       protocol[4] = y[0];
@@ -150,7 +207,6 @@
     int n, port;
     bool disco = false;
     
- 
     if (-1 == SocketFD)
     {
       perror("cannot create socket");
@@ -161,7 +217,7 @@
  
     stSockAddr.sin_family = AF_INET;
     stSockAddr.sin_port = htons(41000);
-    Res = inet_pton(AF_INET, "127.0.0.1", &stSockAddr.sin_addr);
+    Res = inet_pton(AF_INET, "192.168.161.175", &stSockAddr.sin_addr);
  
     if (0 > Res)
     {
@@ -185,9 +241,8 @@
     initializeMap(myMap);
     //while(true)
     //{
-    std::thread(readSD,SocketFD).detach();
     std::thread(writeSD,SocketFD).detach();   
-    
+    std::thread(readSD,SocketFD).detach();
     //cin>>message;
     //cin.getline(buffer,6);
     //n= write(SocketFD,message.data(),message.size());
