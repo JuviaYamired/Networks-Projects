@@ -18,11 +18,23 @@
 
   #define MAX_ACTION 7
   #define MAX_SIZE 10
-  
+  #define MIN_SIZE 5
+
   char gameArea[50][50];
   vector<vch> myMap;
   char num_player;
+  char playerId;
   int xx, yy;
+
+  string intToStr(int num){
+    string result;
+    result="000";
+    for(int i = 2 ; i >= 0; --i){
+      result[i] = std::to_string(num%10)[0];
+      num = num/10;
+    }
+    return result;
+  }
 
   void initializeMap(vector<vch>& myMap){
   vch dummy;
@@ -109,11 +121,36 @@
 
   void readSD(int clientSD){
     string x,y,player;
-    char protocol[MAX_ACTION];
+    char *protocol;
+    int dynMessageSize;
+    string dySizeStr;
     int n;
-    n = read(clientSD,protocol,MAX_ACTION);
-    num_player = protocol[0];
+
+    protocol = new char[MIN_SIZE];
+
+    n = read(clientSD,protocol,MIN_SIZE);
+    playerId = protocol[0];
+    //num_player = protocol[0];
     while(true){
+      if(protocol[1] == 'c'){
+        dySizeStr =  protocol[2];
+        dySizeStr += protocol[3];
+        dySizeStr += protocol[4];
+        dynMessageSize =  atoi(dySizeStr.c_str());
+
+        delete[] protocol;
+        protocol = new char[dynMessageSize];
+        n = read(clientSD,protocol,dynMessageSize);
+        if (n < 0) perror("ERROR writing to socket");
+
+        printf("%s\n", protocol);
+      }
+      //bzero(protocol,MIN_SIZE);
+      n = read(clientSD,protocol,MIN_SIZE);
+      printf("mi protocolo: %s \n",protocol );
+      if (n < 0) perror("ERROR reading from socket");
+    }
+    /* while(true){
       printf("Mi protocolo %s \n",protocol);
 
       player = protocol[0];
@@ -130,11 +167,14 @@
       }
       else if(protocol[1] == '2'){
 	      std::thread(updateBullet,stoi(x),stoi(y),protocol[6]).detach();
-      };
+      }
+      else if(protocol[1] == 'c'){
+
+      }
       //bzero(protocol,MAX_ACTION);
       n = read(clientSD,protocol,MAX_ACTION);
       if (n < 0) perror("ERROR reading from socket");
-    }
+    }*/
     shutdown(clientSD, SHUT_RDWR); 
     close(clientSD);
   }
@@ -143,18 +183,35 @@
     int n;
     int gotKey;
     string x, y;
-    char protocol[MAX_ACTION];
+    char* protocol;
     char buffer[2];
-    //updateGameArea();
+    string msgSend;
+    string msgChat;
+
+    protocol = new char[MIN_SIZE];
+
     protocol[0] = '0';
     protocol[1] = '0';
     protocol[2] = '0';
     protocol[3] = '0';
     protocol[4] = '0';
-    protocol[5] = '0';
 
-    n = write(clientSD,protocol,MAX_ACTION);
+    n = write(clientSD,protocol,MIN_SIZE);
+    if (n < 0) perror("ERROR writing to socket");
+    
     while(true){
+      cin>>msgSend;
+      if (msgSend == "c"){
+        cin.ignore();
+        getline(cin,msgChat);
+        cout<<"NUMERO"<<intToStr(12)<<endl;
+        msgSend = playerId + msgSend +  intToStr(msgChat.size()) + msgChat;
+        n = write(clientSD,msgSend.data(),MIN_SIZE + msgChat.size());
+        if (n < 0) perror("ERROR writing to socket"); 
+      }
+
+
+      /*
       cin.getline(buffer,2);
 
       protocol[1] = '1';
@@ -162,6 +219,9 @@
       else if(buffer[0] == 'x') xx++, protocol[6] = '2';
       else if(buffer[0] == 's') yy--, protocol[6] = '3';
       else if(buffer[0] == 'd') yy++, protocol[6] = '4';
+      else if(buffer[0] == 'c') {
+        cin>>message;
+      }
       else protocol[6] = buffer[0], protocol[1] = '2';
       x = to_string(xx);
       y = to_string(yy);
@@ -173,6 +233,7 @@
       protocol[3] = x[1];
       protocol[4] = y[0];
       protocol[5] = y[1];
+      */
       //system("cls");
       //gotKey = getch();
       //switch(gotKey){
@@ -181,8 +242,8 @@
       //
       //string temp="123456";
       //strcpy(protocol,temp.c_str());
-      n = write(clientSD,protocol,MAX_ACTION);
-      //updateGameArea();
+      //n = write(clientSD,protocol,MAX_ACTION);
+      //updateGameArea();*/
     }
     shutdown(clientSD, SHUT_RDWR);
     close(clientSD);
@@ -216,8 +277,8 @@
     memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
  
     stSockAddr.sin_family = AF_INET;
-    stSockAddr.sin_port = htons(41000);
-    Res = inet_pton(AF_INET, "192.168.161.175", &stSockAddr.sin_addr);
+    stSockAddr.sin_port = htons(41001);
+    Res = inet_pton(AF_INET, "192.168.1.4", &stSockAddr.sin_addr);
  
     if (0 > Res)
     {
