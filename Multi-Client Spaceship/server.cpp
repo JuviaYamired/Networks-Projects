@@ -13,12 +13,29 @@
   #include <chrono>
   using namespace std;
 
-  #define HEADER_SIZE 5
-  #define A_MOV_SIZE 5
+  //Size of the types of messages
+  const unsigned int HEADER_SIZE= 2;       //[playerId][action]
+  const unsigned int A_MOV_SIZE= 5;        //[x][x][y][y][direction]
+  const unsigned int A_SHT_SIZE= 5;        //[x][x][y][y][direction]
+  const unsigned int A_CHT_SIZE= 3;        //[size][of][message]
+  const unsigned int A_HOK_SIZE= 1;        //[playerId]
 
+  //Posible actions
+  const string A_MOVE=   "m";   //Move  Action
+  const string A_SHOOT=  "s";   //Shoot Action
+  const string A_HURT=   "h";   //Hurt  Action
+  const string A_KILL=   "k";   //Kill  Action
+  const string A_MATRIX= "x";   //Kill  Action
+  const string A_CHAT=   "c";   //Chat  Action
+  const string keyShoot= "12345678"; //Shoot Directions
+
+  //Keep a list of the clients socket descriptors
   vector<int> clients;
+  //Matrix that store damage done to the players
   vector<vector<unsigned int> > game_matrix;
-  vector<string> playersLastPosition; //Keep track of players position to be send to new players
+  //Keep track of players position to be send to new players
+  vector<string> playersLastPosition;
+  //Counter we use to assign a playerId to a new player
   int ctrNextPlayerId = 1;
 
   string intToStr (int x)
@@ -85,75 +102,143 @@ string buildMatrixProtocol(){
     string dySizeStr, playerId, ptcAction, joinProtocol, strProtocol;
     int holdPlayerNumber = ctrNextPlayerId;
     int n;
-
     protocol = new char[HEADER_SIZE + A_MOV_SIZE];
+
     // First comunication to set client's player id
     n = read(clientSD,protocol,HEADER_SIZE + A_MOV_SIZE);
     if (n < 0) perror("ERROR writing to socket");
 
+    //If new player sending playerId and Initial position
     if( protocol[0] == '0') {
       playerId = intToStr(ctrNextPlayerId);
       protocol[0] = playerId[0];
       protocol[1] = 'm';
-      protocol[4] = '5';
+
       ctrNextPlayerId++;
       printf("New Player, Sending Initial Protocol %s\n", protocol);
       playersLastPosition.push_back(protocol);
 
-      //Broadcasting the new player protocol
+      //Broadcasting the new player position
       for (int i= 0; i < clients.size(); i++){
-        n = write(clients[i],protocol,HEADER_SIZE + 5);
+        n = write(clients[i],protocol,HEADER_SIZE + A_MOV_SIZE);
         if (n < 0) perror("ERROR writing to socket");
       }
 
-      //Sending the new player the position of the other players
+      //Sending the position of the other players to the new player
       if(clients.size() > 1){
         for (int i= 0; i < playersLastPosition.size();i++){
-            n = write(clientSD,playersLastPosition[i].data(),HEADER_SIZE + 5);
+            n = write(clientSD,playersLastPosition[i].data(),HEADER_SIZE + A_MOV_SIZE);
             if (n < 0) perror("ERROR writing to socket");
         }
       }
-
 
     }
 
     //Communication between client - server
     while(true){
+      //Reading the Header of the messages send by the client
       delete[] protocol;
       protocol = new char[HEADER_SIZE];
       n = read(clientSD,protocol,HEADER_SIZE);
       if (n < 0) perror("ERROR writing to socket");
+
+      //Storing the protocol send by the client to do the broadcast later
       joinProtocol = protocol;
+
+      //Storing the playerId who send the message
       playerId=   protocol[0];
+
+      //Storing the action that the player is going to do
       ptcAction=  protocol[1];
-      dySizeStr=  protocol[2];
-      dySizeStr+= protocol[3];
-      dySizeStr+= protocol[4];
-      dynMessageSize =  atoi(dySizeStr.c_str());
 
-      delete[] protocol;
-      protocol = new char[dynMessageSize];
+      //If the player move
+      if(ptcAction == A_MOVE){
+        //Resize to retrieve message
+        dynMessageSize = A_MOV_SIZE;
+        delete[] protocol;
+        protocol = new char[dynMessageSize];
 
-      n = read(clientSD,protocol,dynMessageSize);
-      if (n < 0) perror("ERROR writing to socket");
-      joinProtocol += protocol;
+        //Retrieving the message
+        n = read(clientSD,protocol,dynMessageSize);
+        if (n < 0) perror("ERROR writing to socket");
 
-      cout<<"Protocol Ready :"<< joinProtocol <<endl;
+        //Joinning the full protocol to do the broadcast
+        joinProtocol += protocol;
+        cout<<"Protocol Ready :"<< joinProtocol <<endl;
 
-      if(ptcAction == "m"){
+        //We store the move protocol to let new players know where are the other players
         playersLastPosition[atoi(playerId.c_str())-1] = joinProtocol;
       }
+
+      //if the player shoot
+      else if(ptcAction == A_SHOOT){
+        //Resize to retrieve message
+        dynMessageSize = A_SHT_SIZE;
+        delete[] protocol;
+        protocol = new char[dynMessageSize];
+
+        //Retrieving the message
+        n = read(clientSD,protocol,dynMessageSize);
+        if (n < 0) perror("ERROR writing to socket");
+
+        //Joinning the full protocol to do the broadcast
+        joinProtocol += protocol;
+        cout<<"Protocol Ready :"<< joinProtocol <<endl;
+      }
+
+      //If the player chat
+      else if(ptcAction == A_CHAT){
+        //Resize to retrieve message
+        dynMessageSize = A_CHT_SIZE;
+        delete[] protocol;
+        protocol = new char[dynMessageSize];
+
+        //Retrieving the message
+        n = read(clientSD,protocol,dynMessageSize);
+        if (n < 0) perror("ERROR writing to socket");
+
+        //Storing the size of the actual message
+        dySizeStr=  protocol[0];
+        dySizeStr+= protocol[1];
+        dySizeStr+= protocol[2];
+        dynMessageSize =  atoi(dySizeStr.c_str());
+        joinProtocol+= protocol;
+
+        //Resize to retrieve message
+        delete[] protocol;
+        protocol = new char[dynMessageSize];
+
+        //Retrieving the message
+        n = read(clientSD,protocol,dynMessageSize);
+        if (n < 0) perror("ERROR writing to socket");
+
+        //Joinning the full protocol to do the broadcast
+        joinProtocol += protocol;
+        cout<<"Protocol Ready :"<< joinProtocol <<endl;
+      }
+
+      //If a player is hurted or killed
       else if(ptcAction == "h" || ptcAction == "k"){
+        //Resize to retrieve message
+        dynMessageSize= A_HOK_SIZE;
+        delete[] protocol;
+        protocol = new char[dynMessageSize];
+
+        //Retrieving the message
+        n = read(clientSD, protocol, dynMessageSize);
+        if (n < 0) perror("ERROR writing to socket");
+
+        game_matrix[playerId[0] - '0' - 1][protocol[0] - '0' - 1]++;
         strProtocol = buildMatrixProtocol();
         cout<<"MATRIX : "<<strProtocol<<endl;
         n = write(clientSD, strProtocol.data(), strProtocol.size());
         if (n < 0) perror("ERROR writing to socket");
   	    //n = write(clients[i],matrix_protocol,strProtocol.size());
   	  }
-      //Broadcasting the update of the player protocol
+
+      //Broadcasting the protocol to all the players
       for (int i=0;i<clients.size();i++){
-          cout<<"Sending"<<endl;
-          n = write(clients[i],joinProtocol.data(),HEADER_SIZE + dynMessageSize);
+          n = write(clients[i], joinProtocol.data(), joinProtocol.size());
           if (n < 0) perror("ERROR writing to socket");
       }
     }
@@ -164,6 +249,7 @@ string buildMatrixProtocol(){
 
   int main()
   {
+    vector<unsigned int> holder;
     struct sockaddr_in stSockAddr;
     int SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
     int ConnectFD = 0;
@@ -206,6 +292,13 @@ string buildMatrixProtocol(){
       }
 
       clients.push_back(ConnectFD);
+      holder.clear();
+      for(unsigned int i = 0; i < game_matrix.size(); i++){
+        holder.push_back(0);
+        game_matrix[i].push_back(0);
+      }
+      holder.push_back(0);
+      game_matrix.push_back(holder);
       std::thread(bot,ConnectFD).detach();
     }
 
