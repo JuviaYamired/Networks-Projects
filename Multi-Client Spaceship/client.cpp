@@ -13,30 +13,33 @@
 
   typedef vector<char> vch;
 
-  const unsigned int HEADER_SIZE= 2;       //[playerId][action]
-  const unsigned int A_MOV_SIZE= 5;        //[x][x][y][y][direction]
-  const unsigned int A_SHT_SIZE= 5;        //[x][x][y][y][direction]
-  const unsigned int A_CHT_SIZE= 3;        //[size][of][message]
-  const unsigned int A_HOK_SIZE= 1;        //[playerId]
-  const unsigned int MAX_ACTION= 7;
-  const unsigned int MAX_SIZE= 10;
-  const unsigned int MIN_SIZE= 5;
-  const unsigned int MAX_HIT= 4;
+  //Size of the types of messages
+  const unsigned int HEADER_SIZE= 2;       //[playerId][action]..
+  const unsigned int A_MOV_SIZE= 5;        //..[x][x][y][y][direction]
+  const unsigned int A_SHT_SIZE= 5;        //..[x][x][y][y][direction]
+  const unsigned int A_CHT_SIZE= 3;        //..[size][of][message]
+  const unsigned int A_HOK_SIZE= 1;        //..[playerId]
 
+  //Size of the game map
+  const unsigned int MAX_SIZE= 20;
+
+  //Posible actions
   const string A_MOVE=   "m";   //Move  Action
   const string A_SHOOT=  "s";   //Shoot Action
   const string A_HURT=   "h";   //Hurt  Action
   const string A_KILL=   "k";   //Kill  Action
-  const string A_MATRIX= "x";   //Kill  Action
+  const string A_MATRIX= "x";   //Matrix  Action
   const string A_CHAT=   "c";   //Chat  Action
   const string keyShoot= "12345678"; //Shoot Directions
-  char gameArea[50][50];
+
+  //The map which is a MAX_SIZE x MAX_SIZE matrix
   vector<vch> myMap;
+  //Matrix that keep register of player hurts or killed
   vector<vector<unsigned int> > game_matrix;
-  char num_player;
+  //The player id we need to communicate with the server
   string playerId;
+  //State of the player, if dead can't do an action
   bool dead = false;
-  //int xx, yy;
 
   //Transforms an int to a sized string e.g., intToStr(21,4) => 0021, intToStr(9,3) => 009
   string intToStr(int num, int size){
@@ -50,27 +53,33 @@
     return result;
   }
 
-  void initializeMap(vector<vch>& myMap){
-  vch dummy;
-  for(int i = 0; i < MAX_SIZE; i++){
-    dummy.clear();
-    for(int j = 0; j < MAX_SIZE; j++){
-      dummy.push_back(' ');
+  //Take each column and row of the matrix and fill it with spaces
+  void initializeMap(vector<vch>& myMap)
+  {
+    vch dummy;
+    for(int i = 0; i < MAX_SIZE; i++){
+      dummy.clear();
+      for(int j = 0; j < MAX_SIZE; j++){
+        dummy.push_back(' ');
+      }
+      myMap.push_back(dummy);
     }
-    myMap.push_back(dummy);
-  }
   }
 
-  void drawMap(){
-  for(int i = 0; i < myMap.size(); i++){
-    for(int j = 0; j < myMap.size(); j++){
-      cout<<myMap[i][j];
+  //Draw the content of the matrix
+  void drawMap()
+  {
+    for(int i = 0; i < myMap.size(); i++){
+      for(int j = 0; j < myMap.size(); j++){
+        cout<<myMap[i][j];
+      }
+      cout<<endl;
     }
-    cout<<endl;
-  }
   }
 
-  void printGameMatrix(){
+  //Used to print the matrix that contains the record of damaged players
+  void printGameMatrix()
+  {
     for(unsigned int i = 0; i < game_matrix.size(); i++){
       for(unsigned int j = 0; j < game_matrix[i].size(); j++){
         cout<<game_matrix[i][j]<<" ";
@@ -79,105 +88,108 @@
     }
   }
 
-  void updateMatrix(string my_matrix){
-  vector<unsigned int> holder;
-  string num;
-  bool anterior = false;
-  game_matrix.clear();
-  for(unsigned int i = 0; i < my_matrix.size(); i++){
-    if(my_matrix[i] == ','){
-      holder.push_back(stoi(num));
-      num = "";
+  //
+  void updateMatrix(string my_matrix)
+  {
+    vector<unsigned int> holder;
+    string num;
+    bool anterior = false;
+    game_matrix.clear();
+    for(unsigned int i = 0; i < my_matrix.size(); i++){
+      if(my_matrix[i] == ','){
+        holder.push_back(stoi(num));
+        num = "";
+      }
+      else if(my_matrix[i] == ';'){
+        if(my_matrix[i-1] != ';') holder.push_back(stoi(num));
+        game_matrix.push_back(holder);
+        holder.clear();
+        num = "";
+      }
+      else{
+        num.push_back(my_matrix[i]);
+      }
     }
-    else if(my_matrix[i] == ';'){
-      if(my_matrix[i-1] != ';') holder.push_back(stoi(num));
-      game_matrix.push_back(holder);
-      holder.clear();
-      num = "";
-    }
-    else{
-      num.push_back(my_matrix[i]);
-    }
+    game_matrix.pop_back();
   }
-  game_matrix.pop_back();
-}
 
-  char getNumPlayer(char letterPlayer){
-  string abc = "-ABC";
-  char index;
-  for(unsigned int i = 0; i < abc.size(); i++){
-    if(abc[i] == letterPlayer){
-      index = char(i + '0');
-      return index;
+  //
+  char getNumPlayer(char letterPlayer)
+  {
+    string abc = "-ABC";
+    char index;
+    for(unsigned int i = 0; i < abc.size(); i++){
+      if(abc[i] == letterPlayer){
+        index = char(i + '0');
+        return index;
+      }
     }
+    return '-';
   }
-  return '-';
-}
 
-char hurtOrKilled(char letterPlayer){
-  char letterPlayerNum = getNumPlayer(letterPlayer);
-  unsigned int i = (letterPlayerNum - '0') - 1;
-  unsigned int sum = 0;
-  for(unsigned int j = 0; j < game_matrix.size(); j++){
-    sum += game_matrix[j][i];
+  char hurtOrKilled(char letterPlayer)
+  {
+    char letterPlayerNum = getNumPlayer(letterPlayer);
+    unsigned int i = (letterPlayerNum - '0') - 1;
+    unsigned int sum = 0;
+    for(unsigned int j = 0; j < game_matrix.size(); j++){
+      sum += game_matrix[j][i];
+    }
+    cout<<"suma: "<<sum<<endl;
+    if(sum < 3) return 'h';
+    return 'k';
   }
-  cout<<"suma: "<<sum<<endl;
-  if(sum < 3) return 'h';
-  return 'k';
-}
 
-  void updateBullet(int x, int y, char dir, char myPlayer, int socketFD){
-  bool start = true;
-  char protocol[HEADER_SIZE + A_HOK_SIZE];
-  while(x > 0 && x < (MAX_SIZE-1) && y > 0 && y < (MAX_SIZE-1)){
-    if(myMap[x][y]=='.') myMap[x][y] = ' ';
-
-    if(dir == '1') x--;
-    else if(dir == '2') x--,y--;
-    else if(dir == '3') y--;
-    else if(dir == '4'){
-      if(start) x++;
-      x++, y--;
-    }
-    else if(dir == '5'){
-      if(start) x++;
-      x++;
-    }
-    else if(dir == '6'){
-      if(start) x++, y++;
-      x++, y++;
-    }
-    else if(dir == '7'){
-      if(start) y++;
-      y++;
-    }
-    else if(dir == '8'){
-      if(start) x--, y++;
-      x--, y++;
-    }
-    start = false;
-    if(myMap[x][y] != ' ' && myMap[x][y] != '.'){
-      if(playerId[0] == myPlayer){
-          cout<<"Entre Colision"<<endl;
-	         protocol[0]= myPlayer;
-           protocol[1]= hurtOrKilled(myMap[x][y]);
-           protocol[2]= getNumPlayer(myMap[x][y]);
-           cout<<"enviando Colision"<<endl;
-	         int n = write(socketFD,protocol,HEADER_SIZE + A_HOK_SIZE);
-           if (n < 0) perror("ERROR reading from socket");
-	         printf("BALA: %s", protocol);
+  void updateBullet(int x, int y, char dir, char myPlayer, int socketFD)
+  {
+    bool start = true;
+    char protocol[HEADER_SIZE + A_HOK_SIZE];
+    while(x > 0 && x < (MAX_SIZE-1) && y > 0 && y < (MAX_SIZE-1)){
+      if(myMap[x][y]=='.') myMap[x][y] = ' ';
+      if(dir == '1') x--;
+      else if(dir == '2') x--,y--;
+      else if(dir == '3') y--;
+      else if(dir == '4'){
+        if(start) x++;
+        x++, y--;
+      }
+      else if(dir == '5'){
+        if(start) x++;
+        x++;
+      }
+      else if(dir == '6'){
+        if(start) x++, y++;
+        x++, y++;
+      }
+      else if(dir == '7'){
+        if(start) y++;
+        y++;
+      }
+      else if(dir == '8'){
+        if(start) x--, y++;
+        x--, y++;
+      }
+      start = false;
+      if(myMap[x][y] != ' ' && myMap[x][y] != '.'){
+        if(playerId[0] == myPlayer){
+          protocol[0]= myPlayer;
+          protocol[1]= hurtOrKilled(myMap[x][y]);
+          protocol[2]= getNumPlayer(myMap[x][y]);
+	        int n = write(socketFD,protocol,HEADER_SIZE + A_HOK_SIZE);
+          if (n < 0) perror("ERROR reading from socket");
+	        printf("BALA: %s\n", protocol);
       }
 
-      myMap[x][y] = ' ';
-      break;
+        myMap[x][y] = ' ';
+        break;
+      }
+      myMap[x][y] = '.';
+      drawMap();
+      sleep(1);
     }
-    myMap[x][y] = '.';
+    myMap[x][y] = ' ';
     drawMap();
-    sleep(1);
-  }
-  myMap[x][y] = ' ';
-  drawMap();
-  return;
+    return;
   }
 
   void updateMap(vector<vch>& myMap, int x, int y, int player)
@@ -202,7 +214,8 @@ char hurtOrKilled(char letterPlayer){
     }
   }
 
-
+  //Connection on charge of reading all the protocols send by the server, the player
+  //can only do an action if the server replies with the corresponding protocol
   void readSD(int clientSD){
     string x,y,ptcPlayer,ptcAction;
     char *protocol;
@@ -230,31 +243,28 @@ char hurtOrKilled(char letterPlayer){
     //Drawing the player in the map
     updateMap(myMap, stoi(x), stoi(y), stoi(playerId));
     drawMap();
+
     //Reading the next messages send by the server
     while(true){
+      delete[] protocol;
+      protocol = new char[HEADER_SIZE];
       n = read(clientSD,protocol,HEADER_SIZE);
       if (n < 0) perror("ERROR reading from socket");
       //Which player is doing the action
       ptcPlayer = protocol[0];
       //Which action is going to do
       ptcAction = protocol[1];
-      //Getting the size of the message
-      //dySizeStr =  protocol[2];
-      //dySizeStr += protocol[3];
-      //dySizeStr += protocol[4];
-      //dynMessageSize =  atoi(dySizeStr.c_str());
-      //Resize to retrieve the message
-      //delete[] protocol;
-      //protocol = new char[dynMessageSize];
+      printf("Reading protocol: %s", protocol);
+
       //Verifying which action is going to take place
       if (ptcAction == A_MOVE) {
-        printf("Reading protocol: %s\n", protocol);
         dynMessageSize= A_MOV_SIZE;
-
         //Retrieve the message
+        delete[] protocol;
+        protocol = new char[dynMessageSize];
         n = read(clientSD, protocol, dynMessageSize);
         if (n < 0) perror("ERROR writing to socket");
-
+        printf("%s\n", protocol);
         //Retrieving the position x from the protocol
         x=  protocol[0];
         x+= protocol[1];
@@ -269,12 +279,13 @@ char hurtOrKilled(char letterPlayer){
       }
 
       else if(ptcAction == A_SHOOT){
-        printf("Shoot protocol: %s\n", protocol);
         dynMessageSize= A_SHT_SIZE;
-
         //Retrieve the message
+        delete[] protocol;
+        protocol = new char[dynMessageSize];
         n = read(clientSD, protocol, dynMessageSize);
         if (n < 0) perror("ERROR writing to socket");
+        printf("%s\n", protocol);
 
         //Retrieving the position x from the protocol
         x=  protocol[0];
@@ -287,6 +298,8 @@ char hurtOrKilled(char letterPlayer){
       }
 
       else if(ptcAction == A_MATRIX){
+        delete[] protocol;
+        protocol = new char[3];
         n = read(clientSD, protocol, 3);
         if (n < 0) perror("ERROR writing to socket");
         //Getting the size of the message
@@ -296,8 +309,10 @@ char hurtOrKilled(char letterPlayer){
         dynMessageSize =  atoi(dySizeStr.c_str());
 
         string strProtocol;
-        printf("Reading protocol: %s", protocol);
+        printf("%s", protocol);
         //Retrieve the message
+        delete[] protocol;
+        protocol = new char[dynMessageSize];
         n = read(clientSD, protocol, dynMessageSize);
         if (n < 0) perror("ERROR writing to socket");
         printf("%s\n", protocol);
@@ -308,14 +323,15 @@ char hurtOrKilled(char letterPlayer){
       }
 
       else if(ptcAction == A_HURT || ptcAction == A_KILL){
-        printf("Reading protocol: %s", protocol);
         //Retrieve the message
-        n = read(clientSD, protocol, dynMessageSize);
+        delete[] protocol;
+        protocol = new char[A_HOK_SIZE];
+        n = read(clientSD, protocol, A_HOK_SIZE);
         if (n < 0) perror("ERROR writing to socket");
         printf("%s\n", protocol);
 
         if(ptcAction == A_KILL){
-          if(protocol[0] == num_player)
+          if(protocol[0] == playerId[0])
             dead = true;
         }
       }
@@ -326,26 +342,28 @@ char hurtOrKilled(char letterPlayer){
 
         n = read(clientSD, protocol, A_CHT_SIZE);
         if (n < 0) perror("ERROR writing to socket");
-
+        printf("%s", protocol);
         //Getting the size of the message
         dySizeStr =  protocol[0];
         dySizeStr += protocol[1];
         dySizeStr += protocol[2];
         dynMessageSize =  atoi(dySizeStr.c_str());
-        cout <<" chat messahe size"<< dynMessageSize<<endl;
         delete[] protocol;
         protocol = new char[dynMessageSize];
 
         //Retrieve the message
         n = read(clientSD,protocol,dynMessageSize);
         if (n < 0) perror("ERROR writing to socket");
-        printf("Chat protocol: %s\n", protocol);
+        printf("%s\n", protocol);
       }
+
     }
     shutdown(clientSD, SHUT_RDWR);
     close(clientSD);
   }
 
+  //Connection in charge of sending to the server the actions that a player wants to do
+  //using its corresponding protocol
   void writeSD(int clientSD){
     unsigned int n, xX , yY;
     string x, y, msgSend, msgChat;
@@ -359,13 +377,17 @@ char hurtOrKilled(char letterPlayer){
     msgSend.clear();
     //Communication between client and server
     while(true){
+      //Capture the action of the player
       cin>>msgSend;
+
+      //If the player is dead print only print it's state
       if(dead){
         cout<<"You are dead"<<endl;
       }
 
-      //If player move
+      //If the player wants to move
       else if(msgSend == "w" or msgSend == "a" or msgSend == "s" or msgSend == "d"){
+        //Depending on the direction we move the ship by increasing or decreasing the coordinates
         switch (msgSend[0]) {
           case 'w': xX--;
                     msgSend = "1";
@@ -390,13 +412,17 @@ char hurtOrKilled(char letterPlayer){
         if (n < 0) perror("ERROR writing to socket");
       }
 
-      //If player chat
+      //If the player  wants to chat
       else if (msgSend == "c"){
+        //Get the message that the player wants to write
         cin.ignore();
         getline(cin,msgChat);
-        //Protocol
+
+        //Build of the Protocol
         msgSend = playerId + msgSend +  intToStr(msgChat.size(),3) + msgChat;
-        n = write(clientSD,msgSend.data(),MIN_SIZE + msgChat.size());
+
+        //Sending the protocol to the server
+        n = write(clientSD,msgSend.data(),HEADER_SIZE + A_CHT_SIZE + msgChat.size());
         if (n < 0) perror("ERROR writing to socket");
       }
 
@@ -412,7 +438,9 @@ char hurtOrKilled(char letterPlayer){
       }
       msgSend.clear();
     }
+    //Close the connection when the player leaves
     shutdown(clientSD, SHUT_RDWR);
+    //Free the resources it uses
     close(clientSD);
   }
 

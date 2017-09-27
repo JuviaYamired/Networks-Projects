@@ -14,18 +14,18 @@
   using namespace std;
 
   //Size of the types of messages
-  const unsigned int HEADER_SIZE= 2;       //[playerId][action]
-  const unsigned int A_MOV_SIZE= 5;        //[x][x][y][y][direction]
-  const unsigned int A_SHT_SIZE= 5;        //[x][x][y][y][direction]
-  const unsigned int A_CHT_SIZE= 3;        //[size][of][message]
-  const unsigned int A_HOK_SIZE= 1;        //[playerId]
+  const unsigned int HEADER_SIZE= 2;       //[playerId][action]..
+  const unsigned int A_MOV_SIZE= 5;        //..[x][x][y][y][direction]
+  const unsigned int A_SHT_SIZE= 5;        //..[x][x][y][y][direction]
+  const unsigned int A_CHT_SIZE= 3;        //..[size][of][message]
+  const unsigned int A_HOK_SIZE= 1;        //..[playerId]
 
   //Posible actions
   const string A_MOVE=   "m";   //Move  Action
   const string A_SHOOT=  "s";   //Shoot Action
   const string A_HURT=   "h";   //Hurt  Action
   const string A_KILL=   "k";   //Kill  Action
-  const string A_MATRIX= "x";   //Kill  Action
+  const string A_MATRIX= "x";   //Matrix  Action
   const string A_CHAT=   "c";   //Chat  Action
   const string keyShoot= "12345678"; //Shoot Directions
 
@@ -38,63 +38,51 @@
   //Counter we use to assign a playerId to a new player
   int ctrNextPlayerId = 1;
 
+  //Convert an integer to a string e.g., 1 => "1"
   string intToStr (int x)
   {
-      stringstream str;
-      str << x;
-      return str.str();
+    stringstream str;
+    str << x;
+    return str.str();
   }
 
-  inline unsigned int getSize(){
-  unsigned int tam = game_matrix.size();
-  return 1 + tam + ((tam - 1) * tam) + (tam * tam) + 1;
-}
-
-string OKson(){
-  string matrix;
-  for(unsigned int i = 0; i < game_matrix.size(); i++){
-    for(unsigned int j = 0; j < game_matrix[i].size(); j++){
-      matrix += intToStr(game_matrix[i][j]) + ",";
+  //Build of the JSON matrix
+  string OKson()
+  {
+    string matrix;
+    for(unsigned int i = 0; i < game_matrix.size(); i++){
+      for(unsigned int j = 0; j < game_matrix[i].size(); j++){
+        matrix += intToStr(game_matrix[i][j]) + ",";
+      }
+      matrix.pop_back();
+      matrix += ";";
     }
-    matrix.pop_back();
     matrix += ";";
-  }
-  //matrix += ";";
-  return matrix;
-}
-
-void updateMatrix(char protocol[3]){
-  unsigned int i = protocol[0] - '0';
-  unsigned int j = protocol[2] - '0';
-  game_matrix[i][j]++;
-}
-
-void updateMatrixKilled(char endP){
-  unsigned int i = endP - '0' - 1;
-  game_matrix.erase(game_matrix.begin()+i);
-  for(unsigned int j = 0; j < game_matrix.size(); j++){
-    game_matrix[j].erase(game_matrix[j].begin()+i);
+    return matrix;
   }
 
-  for(unsigned int i = 0; i < game_matrix.size(); i++){
-    for(unsigned int j = 0; j < game_matrix.size(); j++){
-      cout<<game_matrix[i][j]<<" ";
+  void updateMatrix(char protocol[3])
+  {
+    unsigned int i = protocol[0] - '0';
+    unsigned int j = protocol[2] - '0';
+    game_matrix[i][j]++;
+  }
+
+  //Build the protocol to send the matrix to the players
+  string buildMatrixProtocol()
+  {
+    string matriz_formato = OKson();
+    string strProtocol = intToStr(matriz_formato.size());
+    while(strProtocol.size() < 3){
+      strProtocol = "0" + strProtocol;
     }
-    cout<<endl;
-  }
-}
 
-string buildMatrixProtocol(){
-  string matriz_formato = OKson();
-  string strProtocol = intToStr(matriz_formato.size());
-  while(strProtocol.size() < 3){
-    strProtocol = "0" + strProtocol;
+    strProtocol = "1x" + strProtocol + matriz_formato;
+    return strProtocol;
   }
 
-  strProtocol = "1x" + strProtocol + matriz_formato;
-  return strProtocol;
-}
-
+  //Bot in charge of give new players a playerId and reply each of them with the protocol
+  //send by all of the players
   void bot(int clientSD)
   {
     char* protocol;
