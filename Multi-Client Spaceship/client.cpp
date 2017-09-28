@@ -88,7 +88,7 @@
     }
   }
 
-  //
+  //Updates the old matrix with the new one provided by the server
   void updateMatrix(string my_matrix)
   {
     vector<unsigned int> holder;
@@ -113,7 +113,7 @@
     game_matrix.pop_back();
   }
 
-  //
+  //Given a letter, it returns the player's id A is 1, B is 2, etc.
   char getNumPlayer(char letterPlayer)
   {
     string abc = "-ABC";
@@ -127,6 +127,7 @@
     return '-';
   }
 
+  //Checks the matrix to see whether the player has killed or hurt another player
   char hurtOrKilled(char letterPlayer)
   {
     char letterPlayerNum = getNumPlayer(letterPlayer);
@@ -140,9 +141,10 @@
     return 'k';
   }
 
+  //Draws the bullet every second and sends the Hurt or Kill message if there is a collision with another player
   void updateBullet(int x, int y, char dir, char myPlayer, int socketFD)
   {
-    bool start = true;
+    bool start = true; //Modifies the bullet's position so the player doesn't hit himself.
     char protocol[HEADER_SIZE + A_HOK_SIZE];
     while(x > 0 && x < (MAX_SIZE-1) && y > 0 && y < (MAX_SIZE-1)){
       if(myMap[x][y]=='.') myMap[x][y] = ' ';
@@ -171,8 +173,8 @@
       }
       start = false;
       if(myMap[x][y] != ' ' && myMap[x][y] != '.'){
+	//If I shot the bullet and if it hit another player, I send the protocol.
         if(playerId[0] == myPlayer){
-	  cout<<"YO imprimo"<<endl;
           protocol[0]= myPlayer;
           protocol[1]= hurtOrKilled(myMap[x][y]);
           protocol[2]= getNumPlayer(myMap[x][y]);
@@ -193,6 +195,7 @@
     return;
   }
 
+  //Updates the map if a player has moved.
   void updateMap(vector<vch>& myMap, int x, int y, int player)
   {
     string abc = "-ABC";
@@ -215,7 +218,7 @@
     }
   }
 
-  //Connection on charge of reading all the protocols send by the server, the player
+  //Connection on charge of reading all the protocols sent by the server, the player
   //can only do an action if the server replies with the corresponding protocol
   void readSD(int clientSD){
     string x,y,ptcPlayer,ptcAction;
@@ -225,7 +228,7 @@
     int n;
     protocol = new char[HEADER_SIZE + A_MOV_SIZE];
 
-    //Reading the first protocol send by the server to set playerId and initial position
+    //Reading the first protocol sent by the server to set playerId and initial position
     n = read(clientSD, protocol, HEADER_SIZE + A_MOV_SIZE);
     if (n < 0) perror("ERROR reading from socket");
     printf("Received initial protocol: %s\n", protocol);
@@ -245,7 +248,7 @@
     updateMap(myMap, stoi(x), stoi(y), stoi(playerId));
     drawMap();
 
-    //Reading the next messages send by the server
+    //Reading the next messages sent by the server
     while(true){
       delete[] protocol;
       protocol = new char[HEADER_SIZE];
@@ -381,7 +384,7 @@
       //Capture the action of the player
       cin>>msgSend;
 
-      //If the player is dead print only print it's state
+      //If the player is dead print only its state
       if(dead){
         cout<<"You are dead"<<endl;
       }
@@ -427,9 +430,9 @@
         if (n < 0) perror("ERROR writing to socket");
       }
 
-      //If player shoot
+      //If player shoots
       else if (keyShoot.find(msgSend) >= 0){
-        //Build of the protocol
+        //Building protocol
         msgSend = playerId + A_SHOOT + intToStr(xX,2) + intToStr(yY,2) + msgSend;
         cout << "Sending Protocol :"<< msgSend << endl;
 
@@ -482,7 +485,10 @@
       close(SocketFD);
       exit(EXIT_FAILURE);
     }
+	  
+    //Map is empty
     initializeMap(myMap);
+	  
     std::thread(writeSD,SocketFD).detach();
     std::thread(readSD,SocketFD).detach();
     while(true){
