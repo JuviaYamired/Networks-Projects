@@ -390,7 +390,7 @@
       }
 
       //If the player wants to move
-      else if(msgSend == "w" or msgSend == "a" or msgSend == "s" or msgSend == "d"){
+      if(msgSend == "w" or msgSend == "a" or msgSend == "s" or msgSend == "d" and !dead){
         //Depending on the direction we move the ship by increasing or decreasing the coordinates
         switch (msgSend[0]) {
           case 'w': xX--;
@@ -431,7 +431,7 @@
       }
 
       //If player shoots
-      else if (keyShoot.find(msgSend) >= 0){
+      else if (keyShoot.find(msgSend) >= 0 and !dead){
         //Building protocol
         msgSend = playerId + A_SHOOT + intToStr(xX,2) + intToStr(yY,2) + msgSend;
         cout << "Sending Protocol :"<< msgSend << endl;
