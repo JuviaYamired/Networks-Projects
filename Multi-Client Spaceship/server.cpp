@@ -215,14 +215,17 @@
         //Retrieving the message
         n = read(clientSD, protocol, dynMessageSize);
         if (n < 0) perror("ERROR writing to socket");
-
+	joinProtocol += protocol[0];
+	  
         game_matrix[playerId[0] - '0' - 1][protocol[0] - '0' - 1]++;
         strProtocol = buildMatrixProtocol();
         cout<<"MATRIX : "<<strProtocol<<endl;
-        n = write(clientSD, strProtocol.data(), strProtocol.size());
+	for(int i = 0; i < clients.size(); i++){
+        n = write(clients[i], strProtocol.data(), strProtocol.size());
         if (n < 0) perror("ERROR writing to socket");
   	    //n = write(clients[i],matrix_protocol,strProtocol.size());
   	  }
+      }
 
       //Broadcasting the protocol to all the players
       for (int i=0;i<clients.size();i++){

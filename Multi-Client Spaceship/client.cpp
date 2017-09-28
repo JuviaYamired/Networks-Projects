@@ -172,6 +172,7 @@
       start = false;
       if(myMap[x][y] != ' ' && myMap[x][y] != '.'){
         if(playerId[0] == myPlayer){
+	  cout<<"YO imprimo"<<endl;
           protocol[0]= myPlayer;
           protocol[1]= hurtOrKilled(myMap[x][y]);
           protocol[2]= getNumPlayer(myMap[x][y]);
@@ -460,7 +461,7 @@
 
     stSockAddr.sin_family = AF_INET;
     stSockAddr.sin_port = htons(41001);
-    Res = inet_pton(AF_INET, "192.168.1.4", &stSockAddr.sin_addr);
+    Res = inet_pton(AF_INET, "127.0.0.1", &stSockAddr.sin_addr);
 
     if (0 > Res)
     {
