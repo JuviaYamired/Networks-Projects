@@ -124,22 +124,22 @@
 
     //Communication between client - server
     while(true){
-      //Reading the Header of the messages send by the client
+      //Reading the Header of the messages sent by the client
       delete[] protocol;
       protocol = new char[HEADER_SIZE];
       n = read(clientSD,protocol,HEADER_SIZE);
       if (n < 0) perror("ERROR writing to socket");
 
-      //Storing the protocol send by the client to do the broadcast later
+      //Storing the protocol sent by the client to do the broadcast later
       joinProtocol = protocol;
 
-      //Storing the playerId who send the message
+      //Storing the playerId who sent the message
       playerId=   protocol[0];
 
       //Storing the action that the player is going to do
       ptcAction=  protocol[1];
 
-      //If the player move
+      //If the player moves
       if(ptcAction == A_MOVE){
         //Resize to retrieve message
         dynMessageSize = A_MOV_SIZE;
@@ -154,11 +154,11 @@
         joinProtocol += protocol;
         cout<<"Protocol Ready :"<< joinProtocol <<endl;
 
-        //We store the move protocol to let new players know where are the other players
+        //We store the move protocol to let new players know where the other players are
         playersLastPosition[atoi(playerId.c_str())-1] = joinProtocol;
       }
 
-      //if the player shoot
+      //if the player shoots
       else if(ptcAction == A_SHOOT){
         //Resize to retrieve message
         dynMessageSize = A_SHT_SIZE;
@@ -174,7 +174,7 @@
         cout<<"Protocol Ready :"<< joinProtocol <<endl;
       }
 
-      //If the player chat
+      //If the player chats
       else if(ptcAction == A_CHAT){
         //Resize to retrieve message
         dynMessageSize = A_CHT_SIZE;
@@ -205,7 +205,7 @@
         cout<<"Protocol Ready :"<< joinProtocol <<endl;
       }
 
-      //If a player is hurted or killed
+      //If a player is hurt or killed
       else if(ptcAction == "h" || ptcAction == "k"){
         //Resize to retrieve message
         dynMessageSize= A_HOK_SIZE;
@@ -282,7 +282,9 @@
         exit(EXIT_FAILURE);
       }
 
+      //Keeps the clients' sockets in a vector.
       clients.push_back(ConnectFD);
+      //Adds a new player to the matrix.
       holder.clear();
       for(unsigned int i = 0; i < game_matrix.size(); i++){
         holder.push_back(0);
@@ -290,6 +292,7 @@
       }
       holder.push_back(0);
       game_matrix.push_back(holder);
+	    
       std::thread(bot,ConnectFD).detach();
     }
 
